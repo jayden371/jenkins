@@ -182,6 +182,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
     public static final String CUSTOM_PLUGIN_MANAGER = PluginManager.class.getName() + ".className";
 
     private static final Logger LOGGER = Logger.getLogger(PluginManager.class.getName());
+    private static final String ADOPT_THIS_PLUGIN = "adopt-this-plugin";
 
     /**
      * Time elapsed between retries to check the updates sites. It's kind of constant, but let it so for tests
@@ -634,8 +635,8 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
     protected @NonNull Set<String> loadPluginsFromWar(@NonNull String fromPath, @CheckForNull FilenameFilter filter) {
         Set<String> names = new HashSet();
 
-        ServletContext context = Jenkins.get().servletContext;
-        Set<String> plugins = Util.fixNull(context.getResourcePaths(fromPath));
+        ServletContext servletContext = Jenkins.get().servletContext;
+        Set<String> plugins = Util.fixNull(servletContext.getResourcePaths(fromPath));
         Set<URL> copiedPlugins = new HashSet<>();
         Set<URL> dependencies = new HashSet<>();
 
@@ -647,7 +648,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
                 continue;
             }
             try {
-                URL url = context.getResource(pluginPath);
+                URL url = servletContext.getResource(pluginPath);
                 if (filter != null && url != null) {
                     if (!filter.accept(new File(url.getFile()).getParentFile(), fileName)) {
                         continue;
@@ -881,7 +882,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
      * Try the dynamicLoad, removeExisting to attempt to dynamic load disabled plugins
      */
     @Restricted(NoExternalUse.class)
-    public void dynamicLoad(File arc, boolean removeExisting, @CheckForNull List<PluginWrapper> batch) throws IOException, InterruptedException, RestartRequiredException {
+    public void dynamicLoad(File arc, boolean removeExisting, @CheckForNull List<PluginWrapper> batch) throws IOException, RestartRequiredException {
         try (ACLContext context = ACL.as(ACL.SYSTEM)) {
             LOGGER.log(FINE, "Attempting to dynamic load {0}", arc);
             PluginWrapper p = null;
@@ -949,8 +950,8 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
 
     @Restricted(NoExternalUse.class)
     public void start(List<PluginWrapper> plugins) throws Exception {
-      try (ACLContext context = ACL.as(ACL.SYSTEM)) {
-        Map<String, PluginWrapper> pluginsByName = plugins.stream().collect(Collectors.toMap(p -> p.getShortName(), p -> p));
+      try (ACLContext aclContext = ACL.as(ACL.SYSTEM)) {
+        Map<String, PluginWrapper> pluginsByName = plugins.stream().collect(Collectors.toMap(PluginWrapper::getShortName, p -> p));
 
         // recalculate dependencies of plugins optionally depending the newly deployed ones.
         for (PluginWrapper depender: this.plugins) {
@@ -2248,7 +2249,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
 
     @Restricted(DoNotUse.class) // Used from table.jelly
     public boolean isMetaLabel(String label) {
-        return "adopt-this-plugin".equals(label);
+        return label.equals(ADOPT_THIS_PLUGIN);
     }
 
     @Restricted(DoNotUse.class) // Used from table.jelly
@@ -2257,7 +2258,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
         if (categories == null) {
             return false;
         }
-        return Arrays.asList(categories).contains("adopt-this-plugin");
+        return Arrays.asList(categories).contains(ADOPT_THIS_PLUGIN);
     }
 
     @Restricted(DoNotUse.class) // Used from table.jelly
@@ -2270,7 +2271,7 @@ public abstract class PluginManager extends AbstractModelObject implements OnMas
         if (categories == null) {
             return false;
         }
-        return Arrays.asList(categories).contains("adopt-this-plugin");
+        return Arrays.asList(categories).contains(ADOPT_THIS_PLUGIN);
     }
 
     /**

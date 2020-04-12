@@ -185,7 +185,6 @@ import org.kohsuke.accmod.restrictions.DoNotUse;
 @SuppressWarnings("rawtypes")
 public class Functions {
     private static final AtomicLong iota = new AtomicLong();
-    private static Logger LOGGER = Logger.getLogger(Functions.class.getName());
 
     @Restricted(NoExternalUse.class)
     public static /* non-final */ boolean UI_REFRESH = SystemProperties.getBoolean("jenkins.ui.refresh");
@@ -1177,7 +1176,7 @@ public class Functions {
      * degrades gracefully if "it" is not an {@link AccessControlled} object.
      * Otherwise it will perform no check and that problem is hard to notice.
      */
-    public static void checkAnyPermission(Object object, Permission[] permissions) throws IOException, ServletException {
+    public static void checkAnyPermission(Object object, Permission[] permissions) {
         if (permissions == null || permissions.length == 0) {
             return;
         }
@@ -1587,10 +1586,9 @@ public class Functions {
         if(it instanceof Descriptor)
             clazz = ((Descriptor)it).clazz;
 
-        String buf = Stapler.getCurrentRequest().getContextPath() + Jenkins.VIEW_RESOURCE_PATH + '/' +
+        return Stapler.getCurrentRequest().getContextPath() + Jenkins.VIEW_RESOURCE_PATH + '/' +
                 clazz.getName().replace('.', '/').replace('$', '/') +
                 '/' + path;
-        return buf;
     }
 
     public static boolean hasView(Object it, String path) throws IOException {
